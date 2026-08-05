@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  permissions String[]
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  roleId    Int
+  role      Role     @relation(fields: [roleId], references: [id])
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DashboardCategory {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  dashboards  Dashboard[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Dashboard {
+  id            Int               @id @default(autoincrement())
+  name          String
+  description   String?
+  url           String
+  categoryId    Int?
+  category      DashboardCategory? @relation(fields: [categoryId], references: [id])
+  tags          String[]
+  isActive      Boolean           @default(true)
+  refreshRate   Int               @default(0) // 0 = disabled, otherwise seconds
+  playlistItems PlaylistItem[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Playlist {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  items       PlaylistItem[]
+  screens     Screen[]
+  schedules   Schedule[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model PlaylistItem {
+  id          Int       @id @default(autoincrement())
+  playlistId  Int
+  playlist    Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  dashboardId Int
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id])
+  orderIndex  Int
+  durationSec Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Screen {
+  id         Int       @id @default(autoincrement())
+  name       String
+  location   String?
+  playlistId Int?
+  playlist   Playlist? @relation(fields: [playlistId], references: [id])
+  layoutMode String    @default("single")
+  isOnline   Boolean   @default(false)
+  lastSeen   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Schedule {
+  id         Int       @id @default(autoincrement())
+  name       String
+  playlistId Int
+  playlist   Playlist  @relation(fields: [playlistId], references: [id])
+  startTime  String
+  endTime    String
+  daysOfWeek Int[]
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
